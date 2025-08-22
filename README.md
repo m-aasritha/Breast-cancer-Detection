@@ -14,6 +14,28 @@ This project leverages Convolutional Neural Networks (CNNs) for early detection,
 
 ---
 
+
+📈 Future Improvements
+
+Integration with real-time medical imaging systems
+
+Deployment as a web/mobile app for hospitals
+
+Model optimization for faster inference
+
+Explainable AI (XAI) for better decision transparency
+
+
+
+🤝 Contributing
+
+Contributions are welcome!
+Feel free to fork this repo, raise issues, or submit pull requests.
+
+📜 License
+
+This project is licensed under the MIT License.
+---
 Clone the repository:  
 ```bash
 git clone https://github.com/m-aasritha/breast-cancer-detection.git

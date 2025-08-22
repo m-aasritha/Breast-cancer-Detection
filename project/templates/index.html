@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breast Cancer Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Breast Cancer Detection System</h1>
+                <p class="text-gray-600">Deep Learning-based detection using Convolutional Neural Networks</p>
+            </div>
+
+            <!-- Main Content -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <!-- Upload Section -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-4">Upload Mammogram Image</h2>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <input type="file" 
+                               id="imageUpload" 
+                               accept="image/*" 
+                               class="hidden">
+                        <label for="imageUpload" 
+                               class="cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                            Select Image
+                        </label>
+                        <p class="mt-2 text-sm text-gray-500">Supported formats: JPG, PNG</p>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div id="previewSection" class="hidden mb-8">
+                    <h2 class="text-2xl font-semibold mb-4">Image Preview</h2>
+                    <div class="relative">
+                        <img id="imagePreview" 
+                             class="max-w-full h-auto rounded-lg shadow-md" 
+                             alt="Preview">
+                        <button id="analyzeBtn" 
+                                class="mt-4 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors">
+                            Analyze Image
+                        </button>
+                        <div id="loading" class="loading mt-4"></div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="hidden">
+                    <h2 class="text-2xl font-semibold mb-4">Analysis Results</h2>
+                    
+                    <!-- Prediction Result -->
+                    <div class="mb-6 p-6 rounded-lg bg-gray-50">
+                        <h3 class="text-xl font-semibold mb-2">Prediction</h3>
+                        <div id="predictionResult" class="text-lg"></div>
+                        <div class="mt-2">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="confidenceBar" 
+                                     class="bg-blue-600 h-2.5 rounded-full" 
+                                     style="width: 0%"></div>
+                            </div>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Confidence: <span id="confidenceValue">0</span>%
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Confusion Matrix -->
+                    <div class="mb-6 p-6 rounded-lg bg-gray-50">
+                        <h3 class="text-xl font-semibold mb-2">Confusion Matrix</h3>
+                        <div class="flex justify-center">
+                            <img id="confusionMatrix" 
+                                 class="max-w-full h-auto" 
+                                 alt="Confusion Matrix">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="mt-8 text-center text-sm text-gray-600">
+                <p>This is a demonstration system and should not be used for actual medical diagnosis.</p>
+                <p>Always consult with healthcare professionals for medical advice.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewSection = document.getElementById('previewSection');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loading = document.getElementById('loading');
+            const resultsSection = document.getElementById('resultsSection');
+            const predictionResult = document.getElementById('predictionResult');
+            const confidenceBar = document.getElementById('confidenceBar');
+            const confidenceValue = document.getElementById('confidenceValue');
+            const confusionMatrix = document.getElementById('confusionMatrix');
+
+            imageUpload.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        previewSection.classList.remove('hidden');
+                        resultsSection.classList.add('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            analyzeBtn.addEventListener('click', async function() {
+                const file = imageUpload.files[0];
+                if (!file) return;
+
+                // Show loading
+                loading.style.display = 'block';
+                analyzeBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    // Update results
+                    predictionResult.textContent = `Prediction: ${data.prediction}`;
+                    predictionResult.className = `text-lg ${data.prediction === 'Malignant' ? 'text-red-600' : 'text-green-600'}`;
+                    
+                    confidenceBar.style.width = `${data.confidence}%`;
+                    confidenceValue.textContent = data.confidence.toFixed(1);
+                    
+                    confusionMatrix.src = `data:image/png;base64,${data.confusion_matrix}`;
+                    
+                    resultsSection.classList.remove('hidden');
+                } catch (error) {
+                    alert('Error analyzing image. Please try again.');
+                } finally {
+                    loading.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
